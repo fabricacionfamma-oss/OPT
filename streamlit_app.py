@@ -62,12 +62,54 @@ with st.form("rejilla_opt_form"):
     q2_4, o2_4 = hacer_pregunta("2_4", "2.4. ¿Las actividades no cíclicas (cambios, mantenimiento autónomo) se hacen conforme al estándar?")
     q2_5, o2_5 = hacer_pregunta("2_5", "2.5. ¿Las actividades de calidad frecuenciales (vigilancia, Poka Yoke) se hacen conforme al estándar?")
 
-    # --- 3. DIVERSIDAD / TIEMPOS ---
-    st.header("3. Diversidad (Tiempos y Valor Agregado)")
+# --- 3. DIVERSIDAD (FORMATO ACTUALIZADO SEGÚN IMAGEN) ---
+    st.header("3. Diversidad")
+
+    # Tiempos (3.1 a 3.3) usando la función que ya teníamos
     q3_1, o3_1 = hacer_pregunta("3_1", "3.1. Tiempo Operatorio estándar (FOS)", tipo="texto")
     q3_2, o3_2 = hacer_pregunta("3_2", "3.2. Tiempo operatorio medido", tipo="texto")
     q3_3, o3_3 = hacer_pregunta("3_3", "3.3. Tiempo de actividades ok o no ok (+/-5%)", tipo="texto")
-    q3_4, o3_4 = hacer_pregunta("3_4", "3.4. No Valor Agregado (Número de pasos, intermedios, esperas)", tipo="area")
+
+    # 3.4 No Valor Agregado con la escala del 1 al 5
+    st.markdown("#### 3.4. No Valor Agregado")
+    st.write("Seleccione el valor (1 al 5) y añada sus respuestas o comentarios al lado derecho.")
+
+    # Función específica para la estructura de la pregunta 3.4
+    def fila_escala_3_4(id_item, nombre_item):
+        # Proporciones: Nombre (más ancho) | Escala del 1 al 5 | Observaciones
+        col_nombre, col_escala, col_obs = st.columns([1.5, 1.5, 1])
+        
+        with col_nombre:
+            # HTML simple para bajar el texto y alinearlo con los botones
+            st.markdown(f"<div style='padding-top: 12px;'>{nombre_item}</div>", unsafe_allow_html=True)
+            
+        with col_escala:
+            # Botones de radio en formato horizontal
+            valor = st.radio(
+                f"Escala {nombre_item}", 
+                options=[1, 2, 3, 4, 5], 
+                horizontal=True, 
+                key=f"escala_3_4_{id_item}",
+                label_visibility="collapsed"
+            )
+            
+        with col_obs:
+            # Campo de texto de una sola línea para que no descuadre la altura
+            obs = st.text_input(
+                f"Observaciones {nombre_item}", 
+                key=f"obs_3_4_{id_item}", 
+                label_visibility="collapsed", 
+                placeholder="Respuestas y comentarios..."
+            )
+            
+        return valor, obs
+
+    # Generamos las tres filas correspondientes
+    val_pasos, obs_pasos = fila_escala_3_4("pasos", "• Número de pasos")
+    val_tomar, obs_tomar = fila_escala_3_4("tomar", "• Tomar o depositar intermedio")
+    val_esperas, obs_esperas = fila_escala_3_4("esperas", "• Esperas")
+
+    st.write("---")
 
     # --- 4. OBSERVACIÓN DEL RESPETO DEL ESTÁNDAR (DE CERCA) ---
     st.header("4. Observación del respeto del estándar - Observación de cerca")
