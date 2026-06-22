@@ -17,7 +17,7 @@ from googleapiclient.http import MediaIoBaseUpload
 st.set_page_config(page_title="Rejilla OPT Automatizada", layout="wide")
 
 st.title("📋 Sistema de Registro: Rejilla de Observación de Puesto (OPT)")
-st.write("Complete el formulario. Al enviar, se guardará en Drive y se actualizará la base de datos.")
+st.write("Complete el formulario. Al enviar, se guardará en Drive y se actualizará la base de datos central.")
 
 # ==========================================
 # FUNCIONES AUXILIARES
@@ -114,7 +114,6 @@ def generar_excel_profesional(datos_form):
     return output.getvalue()
 
 def subir_excel_a_drive(excel_bytes, nombre_archivo, folder_id):
-    # Carga segura del secreto en formato texto plano
     credenciales_dict = json.loads(st.secrets["google_credentials"])
     SCOPES = ['https://www.googleapis.com/auth/drive']
     creds = service_account.Credentials.from_service_account_info(credenciales_dict, scopes=SCOPES)
@@ -124,7 +123,15 @@ def subir_excel_a_drive(excel_bytes, nombre_archivo, folder_id):
     media = MediaIoBaseUpload(archivo_stream, mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', resumable=True)
     
     metadatos_archivo = {'name': nombre_archivo, 'parents': [folder_id]}
-    archivo_subido = servicio_drive.files().create(body=metadatos_archivo, media_body=media, fields='id, webViewLink').execute()
+    
+    # supportsAllDrives=True previene el error 403 en Unidades Compartidas
+    archivo_subido = servicio_drive.files().create(
+        body=metadatos_archivo, 
+        media_body=media, 
+        fields='id, webViewLink',
+        supportsAllDrives=True
+    ).execute()
+    
     return archivo_subido.get('webViewLink')
 
 # ==========================================
@@ -218,9 +225,41 @@ if btn_enviar:
             }
         }
         
-        # 2. Enviar Resumen a Google Sheets
-        fila_resumen_sheets = [str(fecha), observador, ute_equipo, puesto_operario, f"Filtro: {r1_7}", f"Ergo/Seg: {r1_4}", f"Mejoras: {r6_4}"]
+        # 2. Compilar Excel y subir a Google Drive
+        excel_bytes = generar_excel_profesional(datos_totales)
+        nombre_excel = f"OPT_{puesto_operario.replace(' ', '_')}_{fecha}.xlsx"
+        ID_CARPETA_DRIVE = "1Io4SlOlxISQIA0Jrriiz5LF5fWEYM5Ys" 
         
+        link_del_excel = "No se pudo subir" # Valor por defecto si Drive falla
+        
+        try:
+            link_del_excel = subir_excel_a_drive(excel_bytes, nombre_excel, ID_CARPETA_DRIVE)
+            st.success("📁 ¡El Excel se guardó automáticamente en Google Drive!")
+            st.markdown(f"[🔗 Haz clic aquí para ver el Excel en la nube]({link_del_excel})")
+        except Exception as e:
+            st.error(f"Error al subir a Drive: {e}")
+            st.download_button("📥 Descargar Excel Manualmente", data=excel_bytes, file_name=nombre_excel)
+
+        # 3. Preparar la fila completa estilo "Google Forms"
+        def formato_pz(lista_pz):
+            return " | ".join([p if p else "-" for p in lista_pz])
+
+        fila_completa_sheets = [
+            str(fecha), observador, ute_equipo, puesto_operario,
+            r1_1, o1_1, r1_2, o1_2, r1_4, o1_4, r1_7, o1_7,
+            r2_1, o2_1, r2_2, o2_2,
+            formato_pz(v3_1), obs3_1, 
+            formato_pz(v3_2), obs3_2, 
+            formato_pz(v3_3), obs3_3,
+            formato_pz(v3_4a), obs3_4a, 
+            formato_pz(v3_4b), obs3_4b, 
+            formato_pz(v3_4c), obs3_4c,
+            r4_1, o4_1, r4_2, o4_2,
+            r5_1, o5_1, r6_4, o6_4,
+            link_del_excel  # El link siempre al final
+        ]
+        
+        # 4. Enviar datos a Google Sheets
         try:
             credenciales_dict = json.loads(st.secrets["google_credentials"])
             scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
@@ -228,21 +267,8 @@ if btn_enviar:
             client = gspread.authorize(creds)
             
             sheet = client.open_by_key("1S-N8Ok_Q0NmYqQSzKUBpXgW3OvcjnNkrNBsrL5Xd4dY").sheet1 
-            sheet.append_row(fila_resumen_sheets)
-            st.success("☁️ ¡Resumen enviado a Google Sheets!")
+            sheet.append_row(fila_completa_sheets)
+            st.success("☁️ ¡Base de datos central actualizada con todas las respuestas estilo Forms!")
+            st.balloons()
         except Exception as e:
             st.error(f"Error en Sheets: {e}")
-            
-        # 3. Compilar Excel y subir a Google Drive
-        excel_bytes = generar_excel_profesional(datos_totales)
-        nombre_excel = f"OPT_{puesto_operario.replace(' ', '_')}_{fecha}.xlsx"
-        ID_CARPETA_DRIVE = "17KOWBx1zXdZVMXZvq5Hh90YsENquU-qG" 
-        
-        try:
-            link_drive = subir_excel_a_drive(excel_bytes, nombre_excel, ID_CARPETA_DRIVE)
-            st.success("📁 ¡El Excel se guardó automáticamente en Google Drive!")
-            st.markdown(f"[🔗 Ver Excel en la nube]({link_drive})")
-        except Exception as e:
-            st.error(f"Error en Drive: {e}")
-            # Fallback en caso de que Drive falle, permitimos descargar localmente
-            st.download_button("📥 Descargar Excel Manualmente", data=excel_bytes, file_name=nombre_excel)
