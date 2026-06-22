@@ -154,7 +154,7 @@ def subir_excel_a_drive(excel_bytes, nombre_archivo, folder_id):
     return archivo_subido.get('webViewLink')
 
 # ==========================================
-# INTERFAZ WEB
+# INTERFAZ WEB DEL FORMULARIO
 # ==========================================
 with st.form("formulario_opt_completo"):
     st.header("Información del Relevamiento")
@@ -166,11 +166,15 @@ with st.form("formulario_opt_completo"):
     st.divider()
 
     st.header("1. Preparación de la Observación")
+    
+    # --- CAMBIOS APLICADOS EN EL MÓDULO 1 ---
     r1_1, o1_1 = hacer_pregunta_estandar("1_1", "1.1. ¿Los estándares están al día y completos (FOS, Estado de Referencia 5S, TEO)?")
-    r1_2, o1_2 = hacer_pregunta_estandar("1_2", "1.2. ¿Cuál es el nivel Skill del operario? ¿Ha seguido las formaciones del TEO?", tipo="texto")
+    r1_2, o1_2 = hacer_pregunta_estandar("1_2", "1.2. ¿El operario ha seguido las formaciones del TEO? (Indique nivel Skill en observaciones)")
     r1_3, o1_3 = hacer_pregunta_estandar("1_3", "1.3. ¿La FSSE esta al día (vs la última modificación del puesto)?")
-    r1_4, o1_4 = hacer_pregunta_estandar("1_4", "1.4. ¿Ha sido identificado algún problema de Ergonomía o Seguridad? Si sí, ¿Cuál?", tipo="texto")
-    r1_5, o1_5 = hacer_pregunta_estandar("1_5", "1.5. ¿Se tiene/tenía algún problema de calidad en el puesto recientemente? Si sí, ¿cual?", tipo="texto")
+    r1_4, o1_4 = hacer_pregunta_estandar("1_4", "1.4. ¿Identificó algún problema de Ergonomía o Seguridad? (Si sí, ¿Cuál? en obs.)")
+    r1_5, o1_5 = hacer_pregunta_estandar("1_5", "1.5. ¿Identificó algún problema de calidad reciente? (Si sí, ¿Cuál? en obs.)")
+    
+    # Estas dos mantienen su formato original
     r1_6, o1_6 = hacer_pregunta_estandar("1_6", "1.6. ¿Cuál es el indicador prioritario a mejorar en la UTE?", tipo="texto")
     r1_7, o1_7 = hacer_pregunta_estandar("1_7", "1.7. Filtro escogido", tipo="select", opciones=["Seguridad", "Calidad", "Costos", "Plazo", "Ergonomía"])
 
@@ -230,7 +234,7 @@ if btn_enviar:
             'Contenido': {
                 '1. Preparación de la Observación': {
                     '1.1': {'texto': 'Los estándares están al día y completos', 'es_grilla': False, 'valores': r1_1, 'observacion': o1_1},
-                    '1.2': {'texto': 'Nivel Skill / Formaciones', 'es_grilla': False, 'valores': r1_2, 'observacion': o1_2},
+                    '1.2': {'texto': 'Formaciones TEO', 'es_grilla': False, 'valores': r1_2, 'observacion': o1_2},
                     '1.3': {'texto': 'FSSE al día', 'es_grilla': False, 'valores': r1_3, 'observacion': o1_3},
                     '1.4': {'texto': 'Problemas Ergonomía o Seguridad', 'es_grilla': False, 'valores': r1_4, 'observacion': o1_4},
                     '1.5': {'texto': 'Problemas calidad reciente', 'es_grilla': False, 'valores': r1_5, 'observacion': o1_5},
