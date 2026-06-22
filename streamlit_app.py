@@ -20,7 +20,7 @@ st.title("📋 Sistema de Registro: Rejilla de Observación de Puesto (OPT)")
 st.write("Complete el formulario. Al enviar, se guardará en Drive y se actualizará la base de datos central.")
 
 # ==========================================
-# FUNCIONES AUXILIARES
+# FUNCIONES AUXILIARES (INTERFAZ)
 # ==========================================
 
 def hacer_pregunta_estandar(id_pregunta, texto_pregunta, tipo="radio", opciones=["Sí", "No"]):
@@ -51,68 +51,120 @@ def fila_grilla_interactiva(id_item, texto_item):
     st.write("---")
     return [p1, p2, p3, p4, p5], obs
 
+# ==========================================
+# CREADOR DEL EXCEL MEJORADO
+# ==========================================
 def generar_excel_profesional(datos_form):
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = "Resultado OPT"
-    ws.views.sheetView[0].showGridLines = True
+    ws.views.sheetView[0].showGridLines = False # Oculta las líneas base para mayor limpieza
     
+    # Paleta de colores
     HEADER_FILL = PatternFill(start_color="1F497D", end_color="1F497D", fill_type="solid")
     SECTION_FILL = PatternFill(start_color="DCE6F1", end_color="DCE6F1", fill_type="solid")
-    GRAY_FILL = PatternFill(start_color="F2F2F2", end_color="F2F2F2", fill_type="solid")
+    QUESTION_FILL = PatternFill(start_color="F2F5F8", end_color="F2F5F8", fill_type="solid") # Para remarcar preguntas
+    GRILLA_FILL = PatternFill(start_color="B4C6E7", end_color="B4C6E7", fill_type="solid") # Para encabezados de Pz1..5
     
+    thin_border = Border(left=Side(style='thin', color='A6A6A6'), right=Side(style='thin', color='A6A6A6'),
+                         top=Side(style='thin', color='A6A6A6'), bottom=Side(style='thin', color='A6A6A6'))
+    
+    # Título principal
     ws["A1"] = "REJILLA DE OBSERVACIÓN DE PUESTO (OPT) - RESULTADOS"
     ws["A1"].font = Font(name="Arial", size=14, bold=True, color="1F497D")
     
+    # Encabezado General
     ws["A3"] = "Fecha:"; ws["B3"] = datos_form['Encabezado']['Fecha']
     ws["A4"] = "Observador:"; ws["B4"] = datos_form['Encabezado']['Observador']
     ws["D3"] = "UTE / Equipo:"; ws["E3"] = datos_form['Encabezado']['UTE']
     ws["D4"] = "Puesto / Operario:"; ws["E4"] = datos_form['Encabezado']['Operario']
+    for row in range(3, 5):
+        ws.cell(row=row, column=1).font = Font(bold=True)
+        ws.cell(row=row, column=4).font = Font(bold=True)
     
-    headers = ["ID", "Criterio / Pregunta de la Observación", "Pz 1 / Resp", "Pz 2", "Pz 3", "Pz 4", "Pz 5", "Observaciones"]
-    for col_idx, h in enumerate(headers, 1):
-        cell = ws.cell(row=6, column=col_idx, value=h)
+    # Titulos de Columnas Maestras
+    ws.cell(row=6, column=1, value="ID").fill = HEADER_FILL
+    ws.cell(row=6, column=2, value="Criterio / Pregunta de la Observación").fill = HEADER_FILL
+    ws.cell(row=6, column=3, value="Respuesta / Valores Registrados").fill = HEADER_FILL
+    ws.merge_cells(start_row=6, start_column=3, end_row=6, end_column=7) # Unificado principal
+    ws.cell(row=6, column=8, value="Observaciones y Comentarios").fill = HEADER_FILL
+    
+    for c in range(1, 9):
+        cell = ws.cell(row=6, column=c)
         cell.font = Font(name="Arial", size=10, bold=True, color="FFFFFF")
-        cell.fill = HEADER_FILL
-        cell.alignment = Alignment(horizontal="center")
+        cell.alignment = Alignment(horizontal="center", vertical="center")
+        cell.border = thin_border
         
     r = 7
-    thin_border = Border(left=Side(style='thin', color='D9D9D9'), right=Side(style='thin', color='D9D9D9'),
-                         top=Side(style='thin', color='D9D9D9'), bottom=Side(style='thin', color='D9D9D9'))
     
     for seccion, preguntas in datos_form['Contenido'].items():
+        # Separador de Sección
         ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=8)
         s_cell = ws.cell(row=r, column=1, value=seccion)
         s_cell.font = Font(name="Arial", size=11, bold=True, color="1F497D")
         s_cell.fill = SECTION_FILL
+        s_cell.alignment = Alignment(vertical="center", indent=1)
+        for col in range(1, 9): ws.cell(row=r, column=col).border = thin_border
         r += 1
         
+        # Si entramos a la sección 3, creamos los sub-encabezados exclusivos para Piezas
+        if "3." in seccion:
+            ws.cell(row=r, column=2, value="Desglose por ciclos:").font = Font(bold=True, italic=True)
+            ws.cell(row=r, column=2).alignment = Alignment(horizontal="right")
+            ws.cell(row=r, column=2).fill = GRILLA_FILL
+            ws.cell(row=r, column=1).fill = GRILLA_FILL
+            ws.cell(row=r, column=8).fill = GRILLA_FILL
+            for p_idx in range(5):
+                pz_cell = ws.cell(row=r, column=3 + p_idx, value=f"Pz {p_idx+1}")
+                pz_cell.fill = GRILLA_FILL
+                pz_cell.font = Font(bold=True)
+                pz_cell.alignment = Alignment(horizontal="center", vertical="center")
+            for col in range(1, 9): ws.cell(row=r, column=col).border = thin_border
+            r += 1
+        
+        # Llenar las preguntas
         for q_id, q_data in preguntas.items():
+            # ID
             ws.cell(row=r, column=1, value=q_id).font = Font(bold=True)
-            ws.cell(row=r, column=2, value=q_data['texto'])
+            ws.cell(row=r, column=1).alignment = Alignment(horizontal="center", vertical="center")
+            
+            # Pregunta (Remarcada con fondo de color)
+            c_preg = ws.cell(row=r, column=2, value=q_data['texto'])
+            c_preg.fill = QUESTION_FILL
+            c_preg.alignment = Alignment(wrap_text=True, vertical="center")
             
             if q_data['es_grilla']:
+                # Dibuja las 5 celdas separadas solo para la Pregunta 3
                 for p_idx in range(5):
-                    ws.cell(row=r, column=3 + p_idx, value=q_data['valores'][p_idx]).alignment = Alignment(horizontal="center")
+                    ws.cell(row=r, column=3 + p_idx, value=q_data['valores'][p_idx]).alignment = Alignment(horizontal="center", vertical="center")
             else:
-                ws.cell(row=r, column=3, value=q_data['valores']).alignment = Alignment(horizontal="center")
+                # Unifica las 5 celdas en una sola respuesta central para el resto de las preguntas
+                val_cell = ws.cell(row=r, column=3, value=q_data['valores'])
+                val_cell.alignment = Alignment(horizontal="center", vertical="center")
                 ws.merge_cells(start_row=r, start_column=3, end_row=r, end_column=7)
-                for c in range(4, 8):
-                    ws.cell(row=r, column=c).fill = GRAY_FILL
-                    
-            ws.cell(row=r, column=8, value=q_data['observacion'])
+                
+            # Observación
+            c_obs = ws.cell(row=r, column=8, value=q_data['observacion'])
+            c_obs.alignment = Alignment(wrap_text=True, vertical="center")
+            
+            # Bordes obligatorios para todas las celdas de la fila
             for col in range(1, 9):
                 ws.cell(row=r, column=col).border = thin_border
             r += 1
             
-    ws.column_dimensions["A"].width = 8; ws.column_dimensions["B"].width = 45
-    for c in ["C", "D", "E", "F", "G"]: ws.column_dimensions[c].width = 10
-    ws.column_dimensions["H"].width = 35
+    # Ajustar el ancho de las columnas
+    ws.column_dimensions["A"].width = 8
+    ws.column_dimensions["B"].width = 55
+    for c in ["C", "D", "E", "F", "G"]: ws.column_dimensions[c].width = 11
+    ws.column_dimensions["H"].width = 45
     
     output = io.BytesIO()
     wb.save(output)
     return output.getvalue()
 
+# ==========================================
+# CONEXIÓN GOOGLE DRIVE
+# ==========================================
 def subir_excel_a_drive(excel_bytes, nombre_archivo, folder_id):
     credenciales_dict = json.loads(st.secrets["google_credentials"])
     SCOPES = ['https://www.googleapis.com/auth/drive']
@@ -121,17 +173,11 @@ def subir_excel_a_drive(excel_bytes, nombre_archivo, folder_id):
     servicio_drive = build('drive', 'v3', credentials=creds)
     archivo_stream = io.BytesIO(excel_bytes)
     media = MediaIoBaseUpload(archivo_stream, mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', resumable=True)
-    
     metadatos_archivo = {'name': nombre_archivo, 'parents': [folder_id]}
     
-    # supportsAllDrives=True previene el error 403 en Unidades Compartidas
     archivo_subido = servicio_drive.files().create(
-        body=metadatos_archivo, 
-        media_body=media, 
-        fields='id, webViewLink',
-        supportsAllDrives=True
+        body=metadatos_archivo, media_body=media, fields='id, webViewLink', supportsAllDrives=True
     ).execute()
-    
     return archivo_subido.get('webViewLink')
 
 # ==========================================
@@ -230,7 +276,7 @@ if btn_enviar:
         nombre_excel = f"OPT_{puesto_operario.replace(' ', '_')}_{fecha}.xlsx"
         ID_CARPETA_DRIVE = "1Io4SlOlxISQIA0Jrriiz5LF5fWEYM5Ys" 
         
-        link_del_excel = "No se pudo subir" # Valor por defecto si Drive falla
+        link_del_excel = "No se pudo subir"
         
         try:
             link_del_excel = subir_excel_a_drive(excel_bytes, nombre_excel, ID_CARPETA_DRIVE)
@@ -240,7 +286,7 @@ if btn_enviar:
             st.error(f"Error al subir a Drive: {e}")
             st.download_button("📥 Descargar Excel Manualmente", data=excel_bytes, file_name=nombre_excel)
 
-        # 3. Preparar la fila completa estilo "Google Forms"
+        # 3. Preparar la fila completa para Sheets
         def formato_pz(lista_pz):
             return " | ".join([p if p else "-" for p in lista_pz])
 
@@ -256,7 +302,7 @@ if btn_enviar:
             formato_pz(v3_4c), obs3_4c,
             r4_1, o4_1, r4_2, o4_2,
             r5_1, o5_1, r6_4, o6_4,
-            link_del_excel  # El link siempre al final
+            link_del_excel 
         ]
         
         # 4. Enviar datos a Google Sheets
