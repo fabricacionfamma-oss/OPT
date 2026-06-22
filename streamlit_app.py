@@ -62,52 +62,57 @@ with st.form("rejilla_opt_form"):
     q2_4, o2_4 = hacer_pregunta("2_4", "2.4. ¿Las actividades no cíclicas (cambios, mantenimiento autónomo) se hacen conforme al estándar?")
     q2_5, o2_5 = hacer_pregunta("2_5", "2.5. ¿Las actividades de calidad frecuenciales (vigilancia, Poka Yoke) se hacen conforme al estándar?")
 
-# --- 3. DIVERSIDAD (FORMATO ACTUALIZADO SEGÚN IMAGEN) ---
+# --- 3. DIVERSIDAD (GRILLA DE 5 PIEZAS) ---
     st.header("3. Diversidad")
+    st.write("Complete los valores para cada una de las piezas observadas (1 al 5) y añada comentarios.")
 
-    # Tiempos (3.1 a 3.3) usando la función que ya teníamos
-    q3_1, o3_1 = hacer_pregunta("3_1", "3.1. Tiempo Operatorio estándar (FOS)", tipo="texto")
-    q3_2, o3_2 = hacer_pregunta("3_2", "3.2. Tiempo operatorio medido", tipo="texto")
-    q3_3, o3_3 = hacer_pregunta("3_3", "3.3. Tiempo de actividades ok o no ok (+/-5%)", tipo="texto")
+    # 1. Encabezados de la tabla (solo se imprimen una vez arriba)
+    col_tit, c1, c2, c3, c4, c5, col_obs = st.columns([3, 1, 1, 1, 1, 1, 3])
+    with col_tit: st.write("**Concepto**")
+    with c1: st.write("**Pz 1**")
+    with c2: st.write("**Pz 2**")
+    with c3: st.write("**Pz 3**")
+    with c4: st.write("**Pz 4**")
+    with c5: st.write("**Pz 5**")
+    with col_obs: st.write("**Respuestas y comentarios**")
 
-    # 3.4 No Valor Agregado con la escala del 1 al 5
-    st.markdown("#### 3.4. No Valor Agregado")
-    st.write("Seleccione el valor (1 al 5) y añada sus respuestas o comentarios al lado derecho.")
+    st.write("---") # Línea debajo de los encabezados
 
-    # Función específica para la estructura de la pregunta 3.4
-    def fila_escala_3_4(id_item, nombre_item):
-        # Proporciones: Nombre (más ancho) | Escala del 1 al 5 | Observaciones
-        col_nombre, col_escala, col_obs = st.columns([1.5, 1.5, 1])
+    # 2. Función para crear cada fila de la grilla
+    def fila_grilla(id_item, nombre_item):
+        # Mismas proporciones [3, 1, 1, 1, 1, 1, 3] para que todo quede alineado
+        col_tit, c1, c2, c3, c4, c5, col_obs = st.columns([3, 1, 1, 1, 1, 1, 3])
         
-        with col_nombre:
-            # HTML simple para bajar el texto y alinearlo con los botones
-            st.markdown(f"<div style='padding-top: 12px;'>{nombre_item}</div>", unsafe_allow_html=True)
+        with col_tit:
+            # Usamos HTML básico para que el texto baje un poco y se alinee con las cajas
+            st.markdown(f"<div style='font-size: 14px; padding-top: 8px;'>{nombre_item}</div>", unsafe_allow_html=True)
             
-        with col_escala:
-            # Botones de radio en formato horizontal
-            valor = st.radio(
-                f"Escala {nombre_item}", 
-                options=[1, 2, 3, 4, 5], 
-                horizontal=True, 
-                key=f"escala_3_4_{id_item}",
-                label_visibility="collapsed"
-            )
+        with c1: p1 = st.text_input("1", key=f"{id_item}_1", label_visibility="collapsed")
+        with c2: p2 = st.text_input("2", key=f"{id_item}_2", label_visibility="collapsed")
+        with c3: p3 = st.text_input("3", key=f"{id_item}_3", label_visibility="collapsed")
+        with c4: p4 = st.text_input("4", key=f"{id_item}_4", label_visibility="collapsed")
+        with c5: p5 = st.text_input("5", key=f"{id_item}_5", label_visibility="collapsed")
+        
+        with col_obs: 
+            obs = st.text_input("Obs", key=f"{id_item}_obs", label_visibility="collapsed", placeholder="Comentarios...")
             
-        with col_obs:
-            # Campo de texto de una sola línea para que no descuadre la altura
-            obs = st.text_input(
-                f"Observaciones {nombre_item}", 
-                key=f"obs_3_4_{id_item}", 
-                label_visibility="collapsed", 
-                placeholder="Respuestas y comentarios..."
-            )
-            
-        return valor, obs
+        # Retornamos los datos por si necesitas enviarlos a Google Sheets después
+        return [p1, p2, p3, p4, p5, obs]
 
-    # Generamos las tres filas correspondientes
-    val_pasos, obs_pasos = fila_escala_3_4("pasos", "• Número de pasos")
-    val_tomar, obs_tomar = fila_escala_3_4("tomar", "• Tomar o depositar intermedio")
-    val_esperas, obs_esperas = fila_escala_3_4("esperas", "• Esperas")
+    # 3. Construimos las filas llamando a la función
+    # Tiempos
+    datos_3_1 = fila_grilla("3_1", "3.1. Tiempo Operatorio estándar (FOS)")
+    datos_3_2 = fila_grilla("3_2", "3.2. Tiempo operatorio medido")
+    datos_3_3 = fila_grilla("3_3", "3.3. Tiempo de actividades ok o no ok (+/-5%)")
+
+    # Separador visual
+    st.markdown("<br>", unsafe_allow_html=True) 
+
+    # No Valor Agregado
+    st.markdown("**3.4. No Valor Agregado**")
+    datos_3_4_pasos = fila_grilla("3_4_pasos", "• Número de pasos")
+    datos_3_4_tomar = fila_grilla("3_4_tomar", "• Tomar o depositar intermedio")
+    datos_3_4_esperas = fila_grilla("3_4_esperas", "• Esperas")
 
     st.write("---")
 
