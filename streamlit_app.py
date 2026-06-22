@@ -142,9 +142,6 @@ def generar_excel_profesional(datos_form):
     wb.save(output)
     return output.getvalue()
 
-# ==========================================
-# CONEXIÓN GOOGLE DRIVE
-# ==========================================
 def subir_excel_a_drive(excel_bytes, nombre_archivo, folder_id):
     credenciales_dict = json.loads(st.secrets["google_credentials"])
     SCOPES = ['https://www.googleapis.com/auth/drive']
@@ -157,7 +154,7 @@ def subir_excel_a_drive(excel_bytes, nombre_archivo, folder_id):
     return archivo_subido.get('webViewLink')
 
 # ==========================================
-# INTERFAZ WEB DEL FORMULARIO
+# INTERFAZ WEB
 # ==========================================
 with st.form("formulario_opt_completo"):
     st.header("Información del Relevamiento")
@@ -321,7 +318,6 @@ if btn_enviar:
             sheet = client.open_by_key("1S-N8Ok_Q0NmYqQSzKUBpXgW3OvcjnNkrNBsrL5Xd4dY").sheet1 
             sheet.append_row(fila_completa)
             st.success("☁️ ¡Base de datos de Sheets actualizada con éxito!")
-            st.balloons()
         except Exception as e:
             st.error(f"Error en Sheets: {e}")
 
